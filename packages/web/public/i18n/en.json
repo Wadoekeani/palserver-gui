@@ -1436,7 +1436,7 @@
   "瀏覽資料夾": "Browse folders",
   "等待聊天訊息…": "Waiting for chat messages...",
   "伺服器未執行，暫時無法接收聊天訊息。": "Server is not running; cannot receive chat messages.",
-  "PalDefender 未安裝或 logChat 未啟用 — 玩家聊天對話不會在此顯示。": "PalDefender not installed or logChat not enabled \u2014 player chat will not appear here.",
+  "PalDefender 未安裝或 logChat 未啟用 — 玩家聊天對話不會在此顯示。": "PalDefender not installed or logChat not enabled — player chat will not appear here.",
   "目錄瀏覽僅限區域網路使用": "Directory browsing is only available on the local network",
   "BOSS(頭目)版本": "BOSS (Alpha) variant",
   "歡迎環境": "WoRld PreSeTs",
@@ -1966,5 +1966,11 @@
   "官方 API 那邊沒有成功:{error}": "Official API side failed: {error}",
   "官方名單": "Game ban list",
   "兩套名單": "Both lists",
-  "兩套名單彼此獨立;「兩套名單」代表官方 banlist.txt 與 PalDefender 都有。": "The two lists are independent; \"Both lists\" means the ID is in the game's banlist.txt and in PalDefender."
+  "兩套名單彼此獨立;「兩套名單」代表官方 banlist.txt 與 PalDefender 都有。": "The two lists are independent; \"Both lists\" means the ID is in the game's banlist.txt and in PalDefender.",
+  "重啟伺服器後生效": "Takes effect after the server restarts",
+  "請先啟動伺服器": "Start the server first",
+  "伺服器未運行:docker/k8s 的模組安裝與停用需要容器在運行中才能傳輸檔案,請先啟動伺服器。": "Server is not running: installing or toggling mods on docker/k8s needs the container up so files can be transferred. Start the server first.",
+  "已停用,重啟伺服器後生效。": "Disabled. Takes effect after the server restarts.",
+  "已啟用,重啟伺服器後生效。": "Enabled. Takes effect after the server restarts.",
+  "安裝、更新或停用後,重啟伺服器才會生效。": "Installs, updates and toggles take effect after the server restarts."
 }
