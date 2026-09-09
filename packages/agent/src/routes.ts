@@ -11,6 +11,10 @@ import {
   PALDEFENDER_OPTIONS,
   PD_MOTD_MAX_LEN,
   PD_STRING_MAX_LEN,
+  PD_MIN_VERSION,
+  PD_SUMMON_LIMITS,
+  pdSupports,
+  type PdFeature,
   PD_MOTD_MAX_LINES,
   PAL_STAT_KEYS,
   PAL_STAT_OPTIONS,
@@ -102,7 +106,7 @@ import {
   restoreConfigSnapshot,
 } from "./config-backup.js";
 import { getPalDefenderConfig, writePalDefenderConfig } from "./paldefender-config.js";
-import { getPlayerDetail, getPdPlayers, getPdGuilds, getPdGuild, getPdRestStatus, setPdRestEnabled, setPdRestPort, provisionPdToken, deleteBase, sendPdAlert } from "./paldefender-rest.js";
+import { getPlayerDetail, getPdPlayers, getPdGuilds, getPdGuild, getPdRestStatus, setPdRestEnabled, setPdRestPort, provisionPdToken, deleteBase, sendPdAlert, summonPal, summonNpc } from "./paldefender-rest.js";
 import { mergeKnownPlayers } from "./player-roster.js";
 import { setTelemetryEnabled, telemetryStatus, track } from "./telemetry.js";
 import { licenseStatus, setLicenseKey, clearLicenseKey, featureEnabled } from "./license.js";
@@ -1849,6 +1853,94 @@ export function registerRoutes(
     // The server still speaks the previous mode until reloadcfg completes.
     await rconExec(rec, "reloadcfg", { base64: previous.values.RCONbase64 === true }).catch(() => {});
     return { ...status, applied: "reloaded" };
+  });
+
+  // ── PalDefender 召喚(贊助者先行版 pd-summon,需 PalDefender 1.9.0+)──
+  const SummonCoords = {
+    x: z.number().finite(),
+    y: z.number().finite(),
+    z: z.number().finite(),
+    uncapturable: z.boolean().optional(),
+    disableAI: z.boolean().optional(),
+  };
+  const SummonPalSchema = z
+    .object({
+      ...SummonCoords,
+      palId: z.string().min(1).max(200).optional(),
+      template: z.string().min(1).max(200).optional(),
+      level: z.number().int().min(PD_SUMMON_LIMITS.minLevel).max(PD_SUMMON_LIMITS.maxLevel).optional(),
+      disableDamageMeter: z.boolean().optional(),
+      healthMultiplier: z.number().positive().max(PD_SUMMON_LIMITS.maxMultiplier).optional(),
+    })
+    .strict()
+    // PalDefender 要求「PalID 與 PalTemplate 恰好一個」——在這裡擋掉,錯誤訊息比它的
+    // VALIDATION_FAILED 好懂。
+    .refine((v) => Boolean(v.palId) !== Boolean(v.template), {
+      message: "請擇一指定帕魯 ID 或 PalTemplate 範本",
+    });
+  const SummonNpcSchema = z
+    .object({
+      ...SummonCoords,
+      npcId: z.string().min(1).max(200),
+      level: z.number().int().min(PD_SUMMON_LIMITS.minLevel).max(PD_SUMMON_LIMITS.maxLevel).optional(),
+    })
+    .strict();
+
+  /** 召喚/據點清理共用的前置檢查:贊助者 → Windows → 已裝 PD → 版本夠新。 */
+  async function requirePdFeature(
+    rec: InstanceRecord,
+    reply: FastifyReply,
+    feature: Parameters<typeof featureEnabled>[0],
+    pdFeature: PdFeature,
+    what: string,
+  ): Promise<boolean> {
+    if (!featureEnabled(feature)) {
+      await reply.code(403).send({ error: "此功能為贊助者先行版,請在設定頁輸入贊助者識別碼解鎖。" });
+      return false;
+    }
+    if (serverPlatform(rec) !== "windows") {
+      await reply.code(409).send({ error: `${what}目前僅支援 Windows 伺服器` });
+      return false;
+    }
+    const mods = await getModsStatus(rec, ctxOf(rec));
+    if (!mods.paldefender.installed) {
+      await reply.code(409).send({ error: `需要先安裝 PalDefender 才能${what}` });
+      return false;
+    }
+    if (!pdSupports(mods.paldefender.version, pdFeature)) {
+      await reply.code(409).send({
+        error: `${what}需要 PalDefender ${PD_MIN_VERSION[pdFeature]} 以上(目前 ${mods.paldefender.version ?? "未知"}),請先更新。`,
+      });
+      return false;
+    }
+    return true;
+  }
+
+  app.post("/api/instances/:id/paldefender/summon/pal", async (req, reply) => {
+    const rec = getOr404((req.params as { id: string }).id);
+    if (!(await requirePdFeature(rec, reply, "pd-summon", "summon", "召喚帕魯"))) return reply;
+    return await summonPal(rec, ctxOf(rec), SummonPalSchema.parse(req.body));
+  });
+
+  app.post("/api/instances/:id/paldefender/summon/npc", async (req, reply) => {
+    const rec = getOr404((req.params as { id: string }).id);
+    if (!(await requirePdFeature(rec, reply, "pd-summon", "summon", "召喚 NPC"))) return reply;
+    return await summonNpc(rec, ctxOf(rec), SummonNpcSchema.parse(req.body));
+  });
+
+  // ── 閒置據點清理(贊助者先行版 pd-findbases,需 PalDefender 1.9.0+)──
+  // PalDefender 的 /findbases 是「有狀態的佇列」(建立 → visit/next → kill),而它的輸出
+  // 格式我們沒有真機樣本,所以這裡只負責轉送子指令並把原文回給前端顯示,不做解析。
+  app.post("/api/instances/:id/paldefender/findbases", async (req, reply) => {
+    const rec = getOr404((req.params as { id: string }).id);
+    if (!(await requirePdFeature(rec, reply, "pd-findbases", "findBases", "清理閒置據點"))) return reply;
+    requireRcon(rec);
+    const { argv } = z
+      .object({ argv: z.string().max(200).regex(/^[a-zA-Z0-9 =<>_-]*$/, "只接受英數與 = < > _ - 空白").default("") })
+      .strict()
+      .parse(req.body);
+    const output = await rconExec(rec, `findbases ${argv}`.trim());
+    return { output };
   });
 
   // ── PalSchema:物種數值編輯器(贊助者先行版 pal-stats)──

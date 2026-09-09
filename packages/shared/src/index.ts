@@ -9,6 +9,7 @@ export * from "./launch-options.js";
 export * from "./workshop-mods.js";
 export * from "./paldefender-options.js";
 export * from "./paldefender-version.js";
+export * from "./pd-summon.js";
 export * from "./pal-stats-options.js";
 export * from "./features.js";
 export * from "./world-presets.js";

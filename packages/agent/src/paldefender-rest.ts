@@ -10,6 +10,9 @@ import type {
   PdPlayerList,
   PdPlayerSummary,
   PdRestStatus,
+  PdSummonNpcRequest,
+  PdSummonPalRequest,
+  PdSummonResult,
   PlayerDetail,
   PlayerProgression,
   PlayerTechs,
@@ -336,6 +339,11 @@ const PD_ERROR_MESSAGES: Record<string, string> = {
   PLAYER_ACCOUNT_NOT_FOUND: "找到玩家但無法載入其存檔資料",
   REQUEST_TIMEOUT: "PalDefender 回應逾時,請稍後再試",
   REQUEST_FAILED: "PalDefender 處理請求時發生錯誤",
+  INVALID_JSON: "PalDefender 無法解析這個請求",
+  VALIDATION_FAILED: "召喚參數不合法 —— 檢查帕魯 ID / 範本名稱與座標是否正確",
+  PAL_TEMPLATE_IMPORT_FAILED: "讀不到這個 PalTemplate —— 確認檔案在 PalDefender/Pals/Templates/ 底下且格式正確",
+  SUMMON_PAL_FAILED: "PalDefender 無法在這個位置召喚帕魯(座標可能在地形外)",
+  SUMMON_NPC_FAILED: "PalDefender 無法在這個位置召喚 NPC(座標可能在地形外)",
 };
 
 class PdRestError extends Error {}
@@ -383,6 +391,67 @@ async function pdFetch<T>(
     throw new PdRestError(`PalDefender 回應 HTTP ${res.status}`);
   }
   return (await res.json()) as T;
+}
+
+/** 取得可用的 PD REST 目錄,順便把「沒裝 / 沒開」翻成看得懂的錯誤。 */
+async function requirePdRest(rec: InstanceRecord, ctx: DriverContext): Promise<string> {
+  const status = await getPdRestStatus(rec, ctx);
+  if (!status.enabled) throw new PdRestError(status.reason ?? "PalDefender REST API 未啟用");
+  const dir = await getPdDir(rec, ctx);
+  if (!dir) throw new PdRestError("尚未安裝 PalDefender");
+  return dir;
+}
+
+/** PalDefender 回傳的 Summoned 物件 → 前端型別。 */
+function toSummonResult(raw: Record<string, unknown> | undefined, fallbackType: "Pal" | "NPC"): PdSummonResult {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const type = String(r.Type ?? fallbackType) === "NPC" ? "NPC" : "Pal";
+  return {
+    type,
+    id: String((type === "NPC" ? r.NPCID : r.PalID) ?? ""),
+    template: r.PalTemplate ? String(r.PalTemplate) : undefined,
+    level: Number(r.Level ?? 1),
+    uncapturable: r.Uncapturable === true,
+    disableAI: r.DisableAI === true,
+    x: Number(r.X ?? 0),
+    y: Number(r.Y ?? 0),
+    z: Number(r.Z ?? 0),
+  };
+}
+
+/** 在指定座標召喚一隻帕魯(PalDefender 1.9.0+)。palId 與 template 二擇一。 */
+export async function summonPal(
+  rec: InstanceRecord,
+  ctx: DriverContext,
+  req: PdSummonPalRequest,
+): Promise<PdSummonResult> {
+  const dir = await requirePdRest(rec, ctx);
+  const body: Record<string, unknown> = { X: req.x, Y: req.y, Z: req.z };
+  if (req.template) body.PalTemplate = req.template;
+  else body.PalID = req.palId;
+  // 範本自帶等級,PalDefender 會忽略 Level;只有 PalID 召喚才送。
+  if (req.palId && req.level !== undefined) body.Level = req.level;
+  if (req.uncapturable !== undefined) body.Uncapturable = req.uncapturable;
+  if (req.disableAI !== undefined) body.DisableAI = req.disableAI;
+  if (req.disableDamageMeter !== undefined) body.DisableDamageMeter = req.disableDamageMeter;
+  if (req.healthMultiplier !== undefined) body.HealthMultiplier = req.healthMultiplier;
+  const res = await pdFetch<{ Summoned?: Record<string, unknown> }>(rec, dir, "/summon/pal", body);
+  return toSummonResult(res.Summoned, "Pal");
+}
+
+/** 在指定座標召喚 NPC(PalDefender 1.9.0+)。 */
+export async function summonNpc(
+  rec: InstanceRecord,
+  ctx: DriverContext,
+  req: PdSummonNpcRequest,
+): Promise<PdSummonResult> {
+  const dir = await requirePdRest(rec, ctx);
+  const body: Record<string, unknown> = { NPCID: req.npcId, X: req.x, Y: req.y, Z: req.z };
+  if (req.level !== undefined) body.Level = req.level;
+  if (req.uncapturable !== undefined) body.Uncapturable = req.uncapturable;
+  if (req.disableAI !== undefined) body.DisableAI = req.disableAI;
+  const res = await pdFetch<{ Summoned?: Record<string, unknown> }>(rec, dir, "/summon/npc", body);
+  return toSummonResult(res.Summoned, "NPC");
 }
 
 /** Send prominent messages through PalDefender's JSON/UTF-8 API. */

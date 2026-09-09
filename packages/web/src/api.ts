@@ -39,6 +39,9 @@ import type {
   PdGuildDetail,
   PdPlayerList,
   PdRestStatus,
+  PdSummonNpcRequest,
+  PdSummonPalRequest,
+  PdSummonResult,
   PlayerDetail,
   PresenceEvent,
   PublicMapSettings,
@@ -542,6 +545,30 @@ export class AgentClient {
 
   saveWorld(id: string): Promise<{ saved: boolean }> {
     return this.request(`/api/instances/${id}/save`, { method: "POST", body: "{}" });
+  }
+
+  /** 在指定座標召喚帕魯(PalDefender 1.9.0+)。贊助者先行。 */
+  summonPal(id: string, req: PdSummonPalRequest): Promise<PdSummonResult> {
+    return this.request(`/api/instances/${id}/paldefender/summon/pal`, {
+      method: "POST",
+      body: JSON.stringify(req),
+    });
+  }
+
+  /** 在指定座標召喚 NPC(PalDefender 1.9.0+)。贊助者先行。 */
+  summonNpc(id: string, req: PdSummonNpcRequest): Promise<PdSummonResult> {
+    return this.request(`/api/instances/${id}/paldefender/summon/npc`, {
+      method: "POST",
+      body: JSON.stringify(req),
+    });
+  }
+
+  /** /findbases 子指令轉送;回傳 PalDefender 的原始輸出(格式未解析)。贊助者先行。 */
+  findBases(id: string, argv: string): Promise<{ output: string }> {
+    return this.request(`/api/instances/${id}/paldefender/findbases`, {
+      method: "POST",
+      body: JSON.stringify({ argv }),
+    });
   }
 
   /** PalDefender 統一玩家名冊(含離線,需 1.8+)。 */

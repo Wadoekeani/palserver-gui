@@ -28,6 +28,9 @@ export const EARLY_ACCESS_FEATURES: EarlyAccessFeature[] = [
   { id: "daily-restart", label: "每天多個固定時刻自動重啟(單一時刻免費;多時刻如 00:00/06:00/12:00/18:00)" },
   { id: "public-map", label: "公開地圖(伺服器地圖公開分享到雲端)" },
   { id: "boss-respawn", label: "頭目重生時間(全頭目死活 / 重生倒數)" },
+  { id: "pd-summon", label: "召喚帕魯 / NPC(PalDefender:指定座標、等級、倍率、關閉 AI)" },
+  { id: "pd-summon-event", label: "頭目活動編輯器(PalSummon:自訂頭目、傷害排行、獎勵抽獎)" },
+  { id: "pd-findbases", label: "閒置據點清理(PalDefender:找出廢棄據點、前往、摧毀)" },
   { id: "webhooks", label: "Webhook / Discord 機器人整合(伺服器事件推送 + 遠端指令)" },
 ];
 
