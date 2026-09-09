@@ -322,6 +322,12 @@ export function WebhookSettingsTab({ client, instanceId }: { client: AgentClient
         )}
       </p>
 
+      <p className="rounded-xl bg-sun/10 px-3 py-2 text-xs text-ink-muted">
+        {t(
+          "PalDefender 1.9 起自己也能推送 Discord(聊天、公會聊天、反作弊偵測、鑽油平台、傷害排行),那些事件來自遊戲內部,GUI 靠讀日誌拿不到或不完整 —— 建議交給它,設定在「反外掛插件」分頁的 Discord Webhook 區塊。同一類事件兩邊都開會收到兩則通知。",
+        )}
+      </p>
+
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="inline-flex items-center gap-2 text-sm font-extrabold text-ink-muted">
           <FiLink className="size-4 text-pal" /> {t("你的 Webhook")}

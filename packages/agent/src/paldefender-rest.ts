@@ -14,6 +14,7 @@ import type {
   PlayerProgression,
   PlayerTechs,
 } from "@palserver/shared";
+import { PD_MIN_VERSION } from "@palserver/shared";
 import type { DriverContext } from "./driver.js";
 import type { InstanceRecord, InstanceStore } from "./store.js";
 import { serverPlatform } from "./platform.js";
@@ -331,7 +332,7 @@ export function preprovisionPdRest(rec: InstanceRecord, ctx: DriverContext): voi
 const PD_ERROR_MESSAGES: Record<string, string> = {
   INVALID_TOKEN: "存取權杖尚未生效 — 請重啟伺服器一次(或確認 RCON 已啟用,讓 agent 能自動載入權杖)",
   MISSING_PERMISSION: "存取權杖權限不足",
-  PLAYER_NOT_FOUND: "找不到這個玩家 —— 可能從未加入過此伺服器,或你的 PalDefender 版本過舊(需 1.8.0 以上才能查詢離線玩家,請更新 PalDefender)。",
+  PLAYER_NOT_FOUND: `找不到這個玩家 —— 可能從未加入過此伺服器,或你的 PalDefender 版本過舊(需 ${PD_MIN_VERSION.playerDetail} 以上才能查詢離線玩家;離線玩家的線上狀態在 1.9.0 才修正,建議直接更新到最新版)。`,
   PLAYER_ACCOUNT_NOT_FOUND: "找到玩家但無法載入其存檔資料",
   REQUEST_TIMEOUT: "PalDefender 回應逾時,請稍後再試",
   REQUEST_FAILED: "PalDefender 處理請求時發生錯誤",
@@ -375,7 +376,7 @@ async function pdFetch<T>(
     if (code) throw new PdRestError(PD_ERROR_MESSAGES[code] ?? `PalDefender 回應錯誤(${code})`);
     if (res.status === 404) {
       throw new PdRestError(
-        "PalDefender 沒有這個 API 端點 — 你的 PalDefender 版本可能尚未支援玩家細節,或設定/權杖變更後需要「重啟伺服器一次」讓它生效。",
+        `PalDefender 沒有這個 API 端點 — 你的 PalDefender 版本可能太舊(玩家細節需 ${PD_MIN_VERSION.playerDetail} 以上,召喚需 ${PD_MIN_VERSION.summon} 以上),或設定/權杖變更後需要「重啟伺服器一次」讓它生效。`,
       );
     }
     if (res.status === 401) throw new PdRestError(PD_ERROR_MESSAGES.INVALID_TOKEN);
@@ -424,7 +425,9 @@ function collectItems(inventory: Record<string, unknown> | undefined): PdItemSlo
   return out;
 }
 
-/** 統一玩家名冊(PalDefender 1.8+ /players,含離線玩家)。 */
+/** 統一玩家名冊(PalDefender /players,含離線玩家)。
+ *  線上狀態直接讀 PD 的 `Status` 欄位 —— 1.9.0 修正了離線玩家的 Status 與
+ *  Meta.OnlineCount,更舊的版本可能把離線玩家算成在線,請使用者更新。 */
 export async function getPdPlayers(rec: InstanceRecord, ctx: DriverContext): Promise<PdPlayerList> {
   const status = await getPdRestStatus(rec, ctx);
   if (!status.enabled) {

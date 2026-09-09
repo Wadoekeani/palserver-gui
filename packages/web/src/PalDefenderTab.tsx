@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FiAlertTriangle, FiFileText, FiMessageSquare, FiShield, FiSearch } from "react-icons/fi";
+import { FiAlertTriangle, FiEye, FiEyeOff, FiFileText, FiMessageSquare, FiShield, FiSearch } from "react-icons/fi";
 import {
   PALDEFENDER_OPTIONS,
   PD_MOTD_MAX_LINES,
   PD_CATEGORY_LABELS,
+  PD_MIN_VERSION,
+  pdSupports,
   type PalDefenderConfig,
   type PalDefenderConfigStatus,
   type PdOptionCategory,
   type PdOptionKey,
   type PdOptionMeta,
+  type PdOptionValue,
   type PdRestStatus,
   type ModsStatus,
 } from "@palserver/shared";
@@ -281,6 +284,16 @@ export function PalDefenderTab({
       {[...grouped.entries()].map(([category, keys]) => (
         <div key={category} className={card}>
           <h3 className="mb-1 text-sm font-extrabold text-ink-muted">{category}</h3>
+          {PALDEFENDER_OPTIONS[keys[0]].category === "webhook" && (
+            <p className="mb-1 text-xs text-ink-muted">
+              {t("由 PalDefender 直接推送到 Discord,不需要 GUI 在線。留空 = 停用該項。")}
+              {!pdSupports(mods?.paldefender.version, "webhooks") &&
+                ` ${t("目前安裝的版本是 {v},需要 {min} 以上才有這些設定。", {
+                  v: mods?.paldefender.version ?? "?",
+                  min: PD_MIN_VERSION.webhooks,
+                })}`}
+            </p>
+          )}
           <div className="flex flex-col divide-y divide-line">
             {keys.map((key) => (
               <OptionRow
@@ -331,11 +344,12 @@ function OptionRow({
   onChange,
 }: {
   optionKey: PdOptionKey;
-  value: number | boolean;
-  fileValue: number | boolean | undefined;
-  onChange: (value: number | boolean) => void;
+  value: PdOptionValue;
+  fileValue: PdOptionValue | undefined;
+  onChange: (value: PdOptionValue) => void;
 }) {
   useI18n();
+  const [revealed, setRevealed] = useState(false);
   const meta: PdOptionMeta = PALDEFENDER_OPTIONS[optionKey];
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-3">
@@ -356,7 +370,30 @@ function OptionRow({
         )}
       </div>
       <div className="flex items-center gap-3">
-        {meta.type === "bool" ? (
+        {meta.type === "string" ? (
+          <div className="flex items-center gap-1.5">
+            <input
+              type={meta.secret && !revealed ? "password" : "text"}
+              className={`${inputCls} w-72 font-mono text-xs`}
+              value={String(value ?? "")}
+              placeholder={meta.placeholder}
+              autoComplete="off"
+              spellCheck={false}
+              onChange={(e) => onChange(e.target.value)}
+            />
+            {meta.secret && (
+              <button
+                type="button"
+                className={`${btnGhost} px-2`}
+                aria-label={revealed ? t("隱藏") : t("顯示")}
+                title={revealed ? t("隱藏") : t("顯示")}
+                onClick={() => setRevealed((v) => !v)}
+              >
+                {revealed ? <FiEyeOff className="size-4" /> : <FiEye className="size-4" />}
+              </button>
+            )}
+          </div>
+        ) : meta.type === "bool" ? (
           <button
             type="button"
             role="switch"

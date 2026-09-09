@@ -7,6 +7,7 @@ import {
   type PalDefenderConfigPatch,
   type PalDefenderConfigStatus,
   type PdOptionKey,
+  type PdOptionMeta,
 } from "@palserver/shared";
 import type { DriverContext } from "./driver.js";
 import type { InstanceRecord } from "./store.js";
@@ -15,6 +16,12 @@ import { serverRoot } from "./native.js";
 import * as dockerOps from "./docker.js";
 import { execInPod } from "./k8s-files.js";
 import { getPdDir } from "./paldefender-rest.js";
+
+/** 取巢狀設定的子物件(PalDefender 1.9 的 `PalWebhooks`);不存在或型別不符時當空物件。 */
+function subObject(raw: Record<string, unknown>, group: string): Record<string, unknown> {
+  const v = raw[group];
+  return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+}
 
 /** MOTD 可能寫成 "MOTD"(官方)或 "motd";讀取兩者,只取字串成員。 */
 function readMotd(raw: Record<string, unknown>): string[] {
@@ -69,10 +76,11 @@ export async function getPalDefenderConfig(rec: InstanceRecord, ctx: DriverConte
 
   const values: PalDefenderConfig = {};
   for (const key of Object.keys(PALDEFENDER_OPTIONS) as PdOptionKey[]) {
-    const v = raw[key];
-    const meta = PALDEFENDER_OPTIONS[key];
+    const meta: PdOptionMeta = PALDEFENDER_OPTIONS[key];
+    const v = (meta.group ? subObject(raw, meta.group) : raw)[key];
     if (meta.type === "bool" && typeof v === "boolean") values[key] = v;
     else if ((meta.type === "int" || meta.type === "float") && typeof v === "number") values[key] = v;
+    else if (meta.type === "string" && typeof v === "string") values[key] = v;
   }
   return { supported: true, exists: true, values, motd: readMotd(raw) };
 }
@@ -96,9 +104,21 @@ export async function writePalDefenderConfig(
     }
   }
   for (const [key, value] of Object.entries(patch)) {
-    const meta = PALDEFENDER_OPTIONS[key as PdOptionKey];
+    const meta: PdOptionMeta | undefined = PALDEFENDER_OPTIONS[key as PdOptionKey];
     if (!meta) continue;
-    raw[key] = meta.type === "int" ? Math.trunc(Number(value)) : value;
+    let target = raw;
+    if (meta.group) {
+      const existingGroup = raw[meta.group];
+      target =
+        existingGroup && typeof existingGroup === "object" && !Array.isArray(existingGroup)
+          ? (existingGroup as Record<string, unknown>)
+          : {};
+      raw[meta.group] = target;
+    }
+    target[key] =
+      meta.type === "int" ? Math.trunc(Number(value))
+      : meta.type === "string" ? String(value ?? "")
+      : value;
   }
   if (Array.isArray(patch.motd)) {
     const motdKey = "motd" in raw && !("MOTD" in raw) ? "motd" : "MOTD";

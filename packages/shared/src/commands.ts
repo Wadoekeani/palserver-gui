@@ -74,6 +74,8 @@ export interface CommandSpec {
   dangerous?: boolean;
   /** 選定指令時顯示的補充說明(zh-TW 原文,前端 t() 翻譯)。 */
   hint?: string;
+  /** 伺服器回報的別名 —— /getrconcmds 可能只列出別名(例:findunusedbases)。 */
+  aliases?: string[];
 }
 
 const userId = (label = "玩家 UserId"): CommandArg => ({
@@ -277,6 +279,39 @@ export const COMMANDS: CommandSpec[] = [
     ],
   },
   {
+    name: "spawnpal_ex",
+    source: "paldefender",
+    category: "pals",
+    label: "生成野生帕魯(含傷害排行)",
+    hint: "參數與「生成野生帕魯」完全相同,差別是這隻會被計入傷害統計,擊敗後在主控台輸出傷害排行。需 PalDefender 1.9.1 以上。",
+    args: [
+      { name: "palid", label: "帕魯 ID", required: true },
+      { name: "coords", label: "座標與等級(選填)", required: false, coord: true, placeholder: "x y z level" },
+    ],
+  },
+  {
+    name: "spawnpal_ex_j",
+    source: "paldefender",
+    category: "pals",
+    label: "以範本生成帕魯(含傷害排行)",
+    hint: "用 PalTemplate 範本名生成,並計入傷害排行。範本放在 PalDefender/Pals/Templates/。需 PalDefender 1.9.1 以上。",
+    args: [
+      { name: "template", label: "範本名稱", required: true, placeholder: "PalTemplate 檔名(不含 .json)" },
+      { name: "coords", label: "座標與等級(選填)", required: false, coord: true, placeholder: "x y z level" },
+    ],
+  },
+  {
+    name: "spawnnpc",
+    source: "paldefender",
+    category: "pals",
+    label: "生成 NPC(含 AI)",
+    hint: "需 PalDefender 1.9.0 以上。",
+    args: [
+      { name: "npcid", label: "NPC ID 或角色 ID", required: true },
+      { name: "coords", label: "座標與等級(選填)", required: false, coord: true, placeholder: "x y z level" },
+    ],
+  },
+  {
     name: "giveegg",
     source: "paldefender",
     category: "pals",
@@ -345,6 +380,22 @@ export const COMMANDS: CommandSpec[] = [
     args: [{ name: "coords", label: "座標(選填)", required: false, coord: true, placeholder: "x y z" }],
   },
   {
+    name: "findbases",
+    source: "paldefender",
+    category: "cleanup",
+    label: "尋找閒置/廢棄據點",
+    aliases: ["findunusedbases"],
+    hint: "第一次執行會建立佇列,之後可用 visit / next 傳送過去、kill 摧毀。過濾條件範例:inactive days=30 或 unused builds<=5。需 PalDefender 1.9.0 以上。",
+    args: [
+      {
+        name: "argv",
+        label: "子指令與過濾條件",
+        required: false,
+        placeholder: "empty|inactive|unused|all days=30 builds<=5 / visit / next / kill [next]",
+      },
+    ],
+  },
+  {
     name: "setguildleader",
     source: "paldefender",
     category: "bases",
@@ -352,6 +403,29 @@ export const COMMANDS: CommandSpec[] = [
     args: [userId()],
   },
   { name: "exportguilds", source: "paldefender", category: "bases", label: "匯出所有公會為 JSON", args: [] },
+  {
+    name: "admingun",
+    source: "paldefender",
+    category: "server",
+    label: "取得管理員之槍",
+    aliases: ["agun"],
+    hint: "需在遊戲內已是管理員狀態。可秒殺目標與移除建築物件;登出、死亡或關閉管理模式時自動回收。需 PalDefender 1.9.0 以上。",
+    dangerous: true,
+    args: [],
+  },
+  {
+    name: "setting",
+    source: "paldefender",
+    category: "world",
+    label: "讀寫遊戲設定(實驗性)",
+    hint: "直接讀寫 UPalGameSetting 的欄位。用戶端顯示的數值可能不會跟著更新。需 PalDefender 1.9.0 以上。",
+    dangerous: true,
+    args: [
+      { name: "name", label: "設定名稱", required: true },
+      { name: "op", label: "操作", required: true, placeholder: "get | set | add | sub" },
+      { name: "value", label: "新值(get 以外必填)", required: false },
+    ],
+  },
 ];
 
 export const COMMAND_CATEGORY_LABELS: Record<CommandCategory, string> = {

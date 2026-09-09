@@ -10,6 +10,7 @@ import {
   type LaunchOptions,
   PALDEFENDER_OPTIONS,
   PD_MOTD_MAX_LEN,
+  PD_STRING_MAX_LEN,
   PD_MOTD_MAX_LINES,
   PAL_STAT_KEYS,
   PAL_STAT_OPTIONS,
@@ -1689,7 +1690,8 @@ export function registerRoutes(
     const commands = COMMANDS.filter((c) => {
       if (c.source === "builtin") return true;
       if (!hasPalDefender) return false;
-      return live ? live.includes(c.name) : true;
+      if (!live) return true;
+      return live.includes(c.name) || (c.aliases?.some((a) => live.includes(a)) ?? false);
     });
     return { available: true, paldefender: hasPalDefender, commands };
   });
@@ -1830,6 +1832,7 @@ export function registerRoutes(
     const shape = Object.fromEntries(
       Object.entries(PALDEFENDER_OPTIONS).map(([key, meta]) => {
         if (meta.type === "bool") return [key, z.boolean().optional()];
+        if (meta.type === "string") return [key, z.string().max(PD_STRING_MAX_LEN).optional()];
         const num = meta.type === "int" ? z.number().int() : z.number();
         return [key, num.min(meta.min).max(meta.max).optional()];
       }),
