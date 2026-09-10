@@ -12,6 +12,7 @@ import {
   FiSave,
   FiStar,
   FiTrash2,
+  FiZap,
 } from "react-icons/fi";
 import {
   emptyPdSummonEncounter,
@@ -34,6 +35,7 @@ import type { AgentClient } from "./api";
 import { EntityPicker } from "./EntityPicker";
 import { FileEditor } from "./FileManager";
 import { MapPickModal } from "./MapPickModal";
+import { SummonModal } from "./SummonModal";
 import { useGameData, itemIconUrl } from "./gameData";
 import { t, useI18n } from "./i18n";
 import { EmptyState, btn, btnDanger, btnGhost, card, errorCls, inputCls, Select } from "./ui";
@@ -481,6 +483,7 @@ export function PalSummonEventsTab({
   const [rank, setRank] = useState<string>(PD_REWARD_DEFAULT_KEY);
   const [showMap, setShowMap] = useState(false);
   const [rawPath, setRawPath] = useState<string | null>(null);
+  const [showSummon, setShowSummon] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -723,6 +726,14 @@ export function PalSummonEventsTab({
         <button className={btnGhost} onClick={() => void listFiles()} aria-label={t("重新整理")}>
           <FiRefreshCw className="size-4" />
         </button>
+        {/* 即時召喚:活動檔是「排好的」,這個是「現在放一隻」。地圖分頁也有同一個入口,
+            但那裡要先開得起地圖(需要 RCON),所以這裡再放一顆。 */}
+        <button
+          className={`${btnGhost} ml-auto inline-flex items-center gap-1.5`}
+          onClick={() => setShowSummon(true)}
+        >
+          <FiZap className="size-4" /> {t("立即召喚一隻")}
+        </button>
         {selected && (
           <>
             <button
@@ -957,6 +968,15 @@ export function PalSummonEventsTab({
             </div>
           </div>
         </>
+      )}
+
+      {showSummon && (
+        <SummonModal
+          client={client}
+          instanceId={instanceId}
+          initialCoords={enc ? { x: enc.X, y: enc.Y, z: enc.Z } : undefined}
+          onClose={() => setShowSummon(false)}
+        />
       )}
 
       {showMap && (
