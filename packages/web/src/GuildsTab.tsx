@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { FiAlertTriangle, FiChevronRight, FiHome, FiRefreshCw } from "react-icons/fi";
+import { FiAlertTriangle, FiChevronRight, FiHome, FiRefreshCw, FiSearch } from "react-icons/fi";
 import type { SaveGuild } from "@palserver/shared";
 import type { AgentClient } from "./api";
+import { FindBasesModal } from "./FindBasesModal";
 import { GuildDetailModal, researchName } from "./GuildDetailModal";
 import { useGameData } from "./gameData";
 import { t, useI18n } from "./i18n";
@@ -35,6 +36,7 @@ export function GuildsTab({
   const [detailFor, setDetailFor] = useState<SaveGuild | null>(null);
   // 荒廢篩選:管理員輸入天數,標出「任一成員超過該天數未上線」的公會,引導安全刪除荒廢據點。
   const [staleDays, setStaleDays] = useState<number | "">("");
+  const [showFindBases, setShowFindBases] = useState(false);
   const staleThreshold = staleDays === "" ? null : Math.max(1, staleDays);
   // 無人公會:沒有任何成員在 X 日內上線(且有成員、有據點)。X 為空時不篩。
   const isGhostGuild = (g: SaveGuild): boolean => {
@@ -144,6 +146,13 @@ export function GuildsTab({
             {scanning ? t("掃描存檔中…(依存檔大小可能需要幾分鐘)") : t("從存檔刷新")}
           </button>
         )}
+        {/* 存檔快照只看得到「誰很久沒上線」;真正把廢棄據點找出來並清掉要靠 PalDefender 1.9 的 findbases。 */}
+        <button
+          className={`${btnGhost} inline-flex items-center gap-1.5`}
+          onClick={() => setShowFindBases(true)}
+        >
+          <FiSearch className="size-3.5" /> {t("閒置據點清理")}
+        </button>
       </div>
       )}
 
@@ -193,6 +202,10 @@ export function GuildsTab({
         </button>
         );
       })}
+
+      {showFindBases && (
+        <FindBasesModal client={client} instanceId={instanceId} onClose={() => setShowFindBases(false)} />
+      )}
 
       {detailFor && (
         <GuildDetailModal

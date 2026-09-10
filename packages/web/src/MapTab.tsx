@@ -41,6 +41,7 @@ import { PlayerDetailModal } from "./PlayerDetailModal";
 import { GuildDetailModal as SaveGuildDetailModal, BasePeekModal, BaseDetailModal } from "./GuildDetailModal";
 import { PlayerActionsMenu } from "./PlayerActionsMenu";
 import { PublicMapModal } from "./PublicMapModal";
+import { SummonModal } from "./SummonModal";
 import { t, useI18n } from "./i18n";
 import { SHOW_FAST_TRAVEL_UNLOCK } from "./flags";
 import { Overlay, btn, btnGhost, card, errorCls } from "./ui";
@@ -182,6 +183,7 @@ export function MapTab({
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(fullscreen);
   const [showPublicMap, setShowPublicMap] = useState(false);
+  const [showSummon, setShowSummon] = useState(false);
   const [showPlayers, setShowPlayers] = useState(true);
   const [showOffline, setShowOffline] = useState(false);
   const [showBases, setShowBases] = useState(true);
@@ -399,6 +401,13 @@ export function MapTab({
               <FiExternalLink className="size-4" />
             </button>
           )}
+          <button
+            className={`${btnGhost} inline-flex items-center gap-1.5`}
+            onClick={() => setShowSummon(true)}
+            title={t("在指定座標召喚帕魯或 NPC(需 PalDefender 1.9)")}
+          >
+            <FiZap className="size-4" /> {!fullscreen && t("召喚")}
+          </button>
           <button className={btnGhost} onClick={refresh} aria-label={t("重新整理")}>
             <FiRefreshCw className="size-4" />
           </button>
@@ -446,6 +455,9 @@ export function MapTab({
 
   const modals = (
     <>
+      {showSummon && (
+        <SummonModal client={client} instanceId={instanceId} onClose={() => setShowSummon(false)} />
+      )}
       {guildDetailId && (
         <GuildDetailModal
           client={client}
