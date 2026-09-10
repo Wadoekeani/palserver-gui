@@ -12,6 +12,7 @@ import { ModsTab } from "./ModsTab";
 import { PalDefenderTab } from "./PalDefenderTab";
 import { PalStatsTab } from "./PalStatsTab";
 import { BossRespawnTab } from "./BossRespawnTab";
+import { PalSummonEventsTab } from "./PalSummonEventsTab";
 import { BreedingTab } from "./BreedingTab";
 import { WebhookSettingsTab } from "./WebhookSettingsTab";
 import { DiscordBotTab } from "./DiscordBotTab";
@@ -659,6 +660,9 @@ export function InstanceDetailPage({
       )}
       {tab === "palstats" && <PalStatsTab client={client} instanceId={detail.id} running={detail.status === "running"} />}
       {SHOW_BOSS_RESPAWN && tab === "bossrespawn" && <BossRespawnTab client={client} instanceId={detail.id} running={detail.status === "running"} />}
+      {tab === "summons" && (
+        <PalSummonEventsTab client={client} instanceId={detail.id} running={detail.status === "running"} />
+      )}
       {tab === "breeding" && (
         <>
           <BreedingTab

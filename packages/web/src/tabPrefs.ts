@@ -14,6 +14,7 @@ export type Tab =
   | "paldefender"
   | "palstats"
   | "bossrespawn"
+  | "summons"
   | "breeding"
   | "saves"
   | "restart"
@@ -35,6 +36,7 @@ export const TABS: { id: Tab; label: string }[] = [
   { id: "paldefender", label: "反作弊插件" },
   { id: "palstats", label: "帕魯數值調整" },
   { id: "bossrespawn", label: "頭目重生" },
+  { id: "summons", label: "頭目活動" },
   { id: "breeding", label: "配種計算" },
   { id: "saves", label: "存檔備份" },
   { id: "restart", label: "伺服器重啟" },

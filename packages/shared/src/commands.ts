@@ -279,6 +279,14 @@ export const COMMANDS: CommandSpec[] = [
     ],
   },
   {
+    name: "summon",
+    source: "paldefender",
+    category: "pals",
+    label: "啟動頭目活動(PalSummon)",
+    hint: "啟動 PalDefender/Pals/Summons/ 底下的活動檔(檔名不含 .json)。用「頭目活動」分頁編輯這些檔案比較快。",
+    args: [{ name: "file", label: "活動檔名", required: true, placeholder: "不含 .json" }],
+  },
+  {
     name: "spawnpal_ex",
     source: "paldefender",
     category: "pals",
