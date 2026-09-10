@@ -150,6 +150,9 @@ HTTP 狀態碼。
 | `POST /api/instances/:id/players/:userId/ban` | `{ message? }` | `{ banned: userId }` | |
 | `POST /api/instances/:id/players/:userId/kick` | `{ message? }` | `{ kicked: userId }` | |
 | `POST /api/instances/:id/players/:userId/unban` | — | `{ unbanned: userId }` | |
+| `POST /api/instances/:id/paldefender/summon/pal` | `{ x, y, z, palId? \| template?, level?, uncapturable?, disableAI?, disableDamageMeter?, healthMultiplier? }`(palId 與 template 恰好擇一) | 型別 `PdSummonResult` | (贊助限定 `pd-summon`)僅 Windows；需 PalDefender 1.9.0 以上並啟用 REST；走 `POST /v1/pdapi/summon/pal` |
+| `POST /api/instances/:id/paldefender/summon/npc` | `{ npcId, x, y, z, level?, uncapturable?, disableAI? }` | 型別 `PdSummonResult` | (贊助限定 `pd-summon`)同上；走 `POST /v1/pdapi/summon/npc` |
+| `POST /api/instances/:id/paldefender/findbases` | `{ argv }`(只接受英數與 `= < > _ -` 空白,例:`inactive days=30`、`visit`、`kill next`) | `{ output }`(PalDefender 原始輸出,未解析) | (贊助限定 `pd-findbases`)僅 Windows；需 PalDefender 1.9.0 以上；走 RCON `findbases`,佇列狀態在 PalDefender 那側 |
 | `POST /api/instances/:id/teleport` | `{ source, target }`(`source` = 玩家識別字串;`target` = 玩家 UserId 或座標「x y [z]」) | `{ output }`(RCON 原始輸出) | (贊助限定 `teleport`)僅 Windows；需已安裝 PalDefender;走 RCON `tp` 指令 |
 
 ### 6. RCON

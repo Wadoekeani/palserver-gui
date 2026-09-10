@@ -171,7 +171,7 @@ export function PalDefenderTab({
       enabled={mods?.paldefender.enabled}
       onToggleEnabled={() => void toggleEnabled()}
       latestVersion={latest?.paldefender}
-      note={<>{t("「玩家細節(查看帕魯/背包)」需要 v1.8.0 以上的測試版才支援。")}{t("安裝或更新後,重啟伺服器才會生效。")}</>}
+      note={<>{t("「玩家細節(查看帕魯/背包)」需要 v1.8.0 以上;召喚、閒置據點清理與內建 Discord 推送需要 v1.9.0 以上。")}{t("安裝或更新後,重啟伺服器才會生效。")}</>}
     />
   );
 
